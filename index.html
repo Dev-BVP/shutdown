@@ -24,7 +24,7 @@
     font-weight: 400;
     margin-bottom: 50px;
     opacity: 0;
-    animation: fadeIn 2s forwards;
+    animation: fadeIn 1s forwards;
   }
 
   @keyframes fadeIn {
@@ -78,36 +78,29 @@
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
   }
-  window.onload = goFullscreen;
+  window.onload = () => {
+    goFullscreen();
 
-  // Fake shutdown countdown
-  let countdown = 5;
-  const message = document.getElementById("message");
-  const overlay = document.getElementById("overlay");
+    // Immediately trigger fake shutdown
+    const overlay = document.getElementById("overlay");
+    const message = document.getElementById("message");
+    document.querySelector(".spinner").style.display = "block";
+    message.innerText = "Shutting down…";
 
-  const interval = setInterval(() => {
-    message.innerText = `Shutting down… ${countdown}`;
-    countdown--;
-    if (countdown < 0) {
-      clearInterval(interval);
+    // Fade to black immediately
+    setTimeout(() => {
       message.innerText = "Goodbye!";
       document.querySelector(".spinner").style.display = "none";
+      overlay.style.display = "block";
+    }, 500); // half-second for slight animation
+  };
 
-      // fade to black after 1s
-      setTimeout(() => {
-        overlay.style.display = "block";
-        overlay.style.transition = "background 1s";
-      }, 1000);
-    }
-  }, 1000);
-
-  // Optional cancel with ESC
+  // Optional: cancel with ESC key
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      clearInterval(interval);
       alert("Fake shutdown cancelled!");
-      overlay.style.display = "none";
-      document.querySelector("#shutdownScreen").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+      document.getElementById("shutdownScreen").style.display = "none";
     }
   });
 </script>
