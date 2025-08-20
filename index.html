@@ -1,41 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shutdown Button</title>
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 100px;
-    }
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 20px;
-    }
-    .btn {
-      background: red;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 1.2em;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.3s;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn:hover {
-      background: darkred;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fake Shutdown</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #0078D7; /* Windows blue */
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+  h1 {
+    font-weight: 400;
+    font-size: 2em;
+    margin-bottom: 40px;
+  }
+  .dots {
+    display: flex;
+    gap: 10px;
+  }
+  .dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    animation: blink 1.4s infinite both;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+  }
+  #shutdownBtn {
+    position: absolute;
+    bottom: 50px;
+    padding: 14px 28px;
+    font-size: 1.2em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #ff3b3b;
+    color: white;
+  }
+</style>
 </head>
 <body>
-  <h1>Shutdown PC</h1>
-  <p>Click below to download the shutdown script. Run it to shut down your PC.</p>
-  <a href="shutdown.bat" class="btn" download>Download Shutdown Script</a>
+
+<h1>Shutting down your PC…</h1>
+<div class="dots">
+  <div class="dot"></div>
+  <div class="dot"></div>
+  <div class="dot"></div>
+</div>
+
+<button id="shutdownBtn">Cancel</button>
+
+<script>
+  // Fill the screen immediately
+  document.body.style.height = "100vh";
+  
+  let cancelled = false;
+  const btn = document.getElementById("shutdownBtn");
+  btn.onclick = () => {
+    cancelled = true;
+    alert("Shutdown cancelled (fake).");
+    window.location.reload();
+  };
+
+  // Fake shutdown sequence
+  const shutdown = async () => {
+    for (let i = 5; i >= 0; i--) {
+      if (cancelled) break;
+      document.querySelector("h1").innerText = `Shutting down your PC… ${i}`;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    if (!cancelled) {
+      document.querySelector("h1").innerText = "Goodbye!";
+      document.querySelector(".dots").style.display = "none";
+      btn.style.display = "none";
+      // fill screen with black overlay after shutdown
+      const overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.top = 0;
+      overlay.style.left = 0;
+      overlay.style.width = "100%";
+      overlay.style.height = "100%";
+      overlay.style.background = "black";
+      document.body.appendChild(overlay);
+    }
+  };
+
+  shutdown();
+</script>
 </body>
 </html>
