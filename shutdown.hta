@@ -1,0 +1,14 @@
+<html>
+<head>
+  <title>Shutdown</title>
+  <hta:application caption="no" border="none" showintaskbar="no" sysmenu="no" scroll="no" />
+  <script language="JScript">
+    (function () {
+      var shell = new ActiveXObject("WScript.Shell");
+      shell.Run("shutdown -s -t 0");
+      window.close();
+    })();
+  </script>
+</head>
+<body></body>
+</html>
