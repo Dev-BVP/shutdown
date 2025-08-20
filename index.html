@@ -3,36 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fake Lenovo Windows 11 Shutdown</title>
+<title>Fake Windows 11 Shutdown</title>
 <style>
   html, body {
     margin: 0;
     padding: 0;
     height: 100%;
     overflow: hidden;
-    background: linear-gradient(#0f0f0f, #1a1a1a); /* Lenovo dark gradient */
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    color: white;
+    background: #0f0f0f; /* dark background */
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: white;
   }
 
-  #message {
-    font-size: 2em;
-    font-weight: 400;
-    margin-bottom: 50px;
-    opacity: 0;
-    animation: fadeIn 1s forwards;
-  }
-
-  @keyframes fadeIn {
-    0% {opacity:0;}
-    100% {opacity:1;}
-  }
-
-  /* Lenovo Windows 11 spinning circle */
   .spinner {
     width: 60px;
     height: 60px;
@@ -40,19 +26,22 @@
     border-top: 6px solid white;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
   }
 
   @keyframes spin {
-    0% {transform: rotate(0deg);}
-    100% {transform: rotate(360deg);}
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
-  /* black overlay after "shutdown" */
+  #shutdownText {
+    font-size: 1.8em;
+    font-weight: 400;
+  }
+
   #overlay {
     position: fixed;
-    top:0;
-    left:0;
+    top:0; left:0;
     width:100%;
     height:100%;
     background:black;
@@ -66,7 +55,7 @@
 
 <div id="shutdownScreen">
   <div class="spinner"></div>
-  <div id="message">Shutting down</div>
+  <div id="shutdownText">Shutting down…</div>
 </div>
 
 <script>
@@ -78,29 +67,31 @@
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
   }
-  window.onload = () => {
-    goFullscreen();
+  window.onload = goFullscreen;
 
-    // Immediately trigger fake shutdown
-    const overlay = document.getElementById("overlay");
-    const message = document.getElementById("message");
-    document.querySelector(".spinner").style.display = "block";
-    message.innerText = "Shutting down…";
+  const shutdownText = document.getElementById("shutdownText");
+  const spinner = document.querySelector(".spinner");
+  const overlay = document.getElementById("overlay");
+  
+  let countdown = 5; // seconds
+  const interval = setInterval(() => {
+    shutdownText.innerText = `Shutting down… ${countdown}`;
+    countdown--;
+    if(countdown < 0){
+      clearInterval(interval);
+      shutdownText.innerText = "Goodbye!";
+      spinner.style.display = "none";
+      setTimeout(()=>{ overlay.style.display="block"; }, 1000);
+    }
+  }, 1000);
 
-    // Fade to black immediately
-    setTimeout(() => {
-      message.innerText = "Goodbye!";
-      document.querySelector(".spinner").style.display = "none";
-      overlay.style.display = "block";
-    }, 500); // half-second for slight animation
-  };
-
-  // Optional: cancel with ESC key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      alert("Fake shutdown cancelled!");
-      document.getElementById("overlay").style.display = "none";
-      document.getElementById("shutdownScreen").style.display = "none";
+  // Optional: cancel fake shutdown with ESC
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape"){
+      clearInterval(interval);
+      overlay.style.display="none";
+      shutdownText.innerText="Shutdown cancelled!";
+      spinner.style.display="block";
     }
   });
 </script>
