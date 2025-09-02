@@ -1,100 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fake Windows 11 Shutdown</title>
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
-    background: #0f0f0f; /* dark background */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    color: white;
-  }
-
-  .spinner {
-    width: 60px;
-    height: 60px;
-    border: 6px solid rgba(255,255,255,0.2);
-    border-top: 6px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20px;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  #shutdownText {
-    font-size: 1.8em;
-    font-weight: 400;
-  }
-
-  #overlay {
-    position: fixed;
-    top:0; left:0;
-    width:100%;
-    height:100%;
-    background:black;
-    display:none;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Locked Fake Live YouTube Playlist</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #player {
+      width: 80vw;
+      height: 45vw;
+      max-width: 1280px;
+      max-height: 720px;
+      pointer-events: none; /* disable clicks */
+    }
+  </style>
 </head>
 <body>
+  <div id="player"></div>
 
-<div id="overlay"></div>
+  <script>
+    const PLAYLIST_ID = "PLVLt7z5PCAkdi6JJjUREV4XKWsb337WHc";
+    const API_KEY = "AIzaSyAkqCxO9Un0AwdDGRnPG4b8lZ84GohpKOw";
+    const START_TIME = new Date("2025-01-01T00:00:00Z"); 
 
-<div id="shutdownScreen">
-  <div class="spinner"></div>
-  <div id="shutdownText">Shutting down…</div>
-</div>
+    let videoDurations = [];
+    let totalDuration = 0;
+    let player;
 
-<script>
-  // Force fullscreen
-  function goFullscreen() {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen();
-    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if (el.msRequestFullscreen) el.msRequestFullscreen();
-  }
-  window.onload = goFullscreen;
+    async function fetchDurations() {
+      let allVideoIds = [];
+      let nextPageToken = "";
 
-  const shutdownText = document.getElementById("shutdownText");
-  const spinner = document.querySelector(".spinner");
-  const overlay = document.getElementById("overlay");
-  
-  let countdown = 5; // seconds
-  const interval = setInterval(() => {
-    shutdownText.innerText = `Shutting down… ${countdown}`;
-    countdown--;
-    if(countdown < 0){
-      clearInterval(interval);
-      shutdownText.innerText = "Goodbye!";
-      spinner.style.display = "none";
-      setTimeout(()=>{ overlay.style.display="block"; }, 1000);
+      do {
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId=${PLAYLIST_ID}&pageToken=${nextPageToken}&key=${API_KEY}`
+        );
+        const data = await res.json();
+        allVideoIds.push(...data.items.map(i => i.contentDetails.videoId));
+        nextPageToken = data.nextPageToken || "";
+      } while (nextPageToken);
+
+      const chunkSize = 50;
+      for (let i = 0; i < allVideoIds.length; i += chunkSize) {
+        const chunk = allVideoIds.slice(i, i + chunkSize).join(",");
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${chunk}&key=${API_KEY}`
+        );
+        const data = await res.json();
+        videoDurations.push(...data.items.map(v => parseISO8601(v.contentDetails.duration)));
+      }
+
+      totalDuration = videoDurations.reduce((a,b) => a+b, 0);
+      console.log("Video durations (seconds):", videoDurations);
     }
-  }, 1000);
 
-  // Optional: cancel fake shutdown with ESC
-  document.addEventListener("keydown", (e)=>{
-    if(e.key === "Escape"){
-      clearInterval(interval);
-      overlay.style.display="none";
-      shutdownText.innerText="Shutdown cancelled!";
-      spinner.style.display="block";
+    function parseISO8601(duration) {
+      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const hours = parseInt(match[1] || 0);
+      const minutes = parseInt(match[2] || 0);
+      const seconds = parseInt(match[3] || 0);
+      return hours * 3600 + minutes * 60 + seconds;
     }
-  });
-</script>
 
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player("player", {
+        playerVars: { 
+          listType: "playlist", 
+          list: PLAYLIST_ID, 
+          autoplay: 1, 
+          controls: 0,    
+          disablekb: 1,    
+          modestbranding: 1,
+          rel: 0
+        },
+        events: {
+          onReady: async () => {
+            await fetchDurations();
+            syncPlayback();
+            setInterval(syncPlayback, 3000);  // keep synced
+            // only now apply locking
+            setInterval(forcePlay, 1000);      // prevent pause
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('keydown', e => e.preventDefault());
+          },
+          onStateChange: (e) => {
+            if (e.data === YT.PlayerState.PAUSED) forcePlay();
+          }
+        }
+      });
+    }
+
+    function syncPlayback() {
+      if (videoDurations.length === 0) return;
+
+      const now = new Date();
+      let elapsed = Math.floor((now - START_TIME) / 1000);
+      elapsed = elapsed % totalDuration;
+
+      let index = 0;
+      while (elapsed >= videoDurations[index]) {
+        elapsed -= videoDurations[index];
+        index = (index + 1) % videoDurations.length;
+      }
+
+      player.playVideoAt(index);
+      player.seekTo(elapsed, true);
+    }
+
+    function forcePlay() {
+      if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+        player.playVideo();
+      }
+    }
+  </script>
 </body>
 </html>
